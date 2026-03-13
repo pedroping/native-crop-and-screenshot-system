@@ -123,7 +123,7 @@
         flex-direction: column;
         gap: 1rem;
       }
-      canvas {
+      #canvas-output {
         border: 4px solid #fff;
         box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
         border-radius: 16px;
@@ -137,7 +137,22 @@
       <div id="crop-overlay">
         <div id="crop-box"></div>
       </div>
-      <img src="https://picsum.photos/200/300" crossorigin="anonymous" alt="" />
+      <img
+        src="https://picsum.photos/200/300"
+        crossorigin="anonymous"
+        alt=""
+        style="border-radius: 8px; margin-bottom: 1rem"
+      />
+
+      <canvas
+        id="canvas-01"
+        style="
+          display: block !important;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+        "
+      ></canvas>
+
       <div class="receipt-header">
         <h2>Acme Corp</h2>
         <p>Order #99281-B</p>
@@ -199,6 +214,27 @@
       let startX, startY;
       let cropCoordinates = null;
 
+      // --- Setup Canvas 01 ---
+      const canvas_1 = document.getElementById("canvas-01");
+      const ctx_1 = canvas_1.getContext("2d");
+
+      const imageUrl = "https://picsum.photos/200/300";
+      const imgSetup = new Image();
+
+      // FIX 1: Ask for cross-origin permission before loading the image!
+      imgSetup.crossOrigin = "anonymous";
+
+      imgSetup.onload = function () {
+        // Set canvas dimensions to match the image so it doesn't squish
+        canvas_1.width = imgSetup.width;
+        canvas_1.height = imgSetup.height;
+        ctx_1.drawImage(imgSetup, 0, 0);
+      };
+      imgSetup.src = imageUrl;
+      imgSetup.onerror = () => {
+        console.error("Error loading image from URL:", imageUrl);
+      };
+
       activateCropBtn.addEventListener("click", () => {
         overlay.style.display = "block";
         cropBox.style.display = "none";
@@ -255,16 +291,15 @@
         }
       });
 
-      // Helper: Extract Base64 directly from an existing DOM image using a temporary canvas
       function getBase64FromImage(imgEl) {
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = imgEl.naturalWidth || imgEl.width;
         tempCanvas.height = imgEl.naturalHeight || imgEl.height;
-        
+
         const tempCtx = tempCanvas.getContext("2d");
         tempCtx.drawImage(imgEl, 0, 0);
-        
-        return tempCanvas.toDataURL("image/png"); 
+
+        return tempCanvas.toDataURL("image/png");
       }
 
       function takeScreenshot(elementId, crop) {
@@ -282,17 +317,48 @@
 
         const clone = element.cloneNode(true);
 
+        const originalCanvases = element.querySelectorAll("canvas");
+        const clonedCanvases = clone.querySelectorAll("canvas");
+
+        clonedCanvases.forEach((clonedCanvas, index) => {
+          const originalCanvas = originalCanvases[index];
+          try {
+            const dataUrl = originalCanvas.toDataURL("image/png");
+
+            const imgReplacement = document.createElement("img");
+            imgReplacement.src = dataUrl;
+            imgReplacement.style.cssText = clonedCanvas.style.cssText; // keep original styles
+            imgReplacement.width =
+              originalCanvas.width || originalCanvas.offsetWidth;
+            imgReplacement.height =
+              originalCanvas.height || originalCanvas.offsetHeight;
+            imgReplacement.className = clonedCanvas.className;
+
+            clonedCanvas.parentNode.replaceChild(imgReplacement, clonedCanvas);
+          } catch (error) {
+            console.error("Could not export canvas data (Tainted?):", error);
+          }
+        });
+
         const originalImages = element.querySelectorAll("img");
         const clonedImages = clone.querySelectorAll("img");
-        
+
         clonedImages.forEach((clonedImg, index) => {
           const originalImg = originalImages[index];
-          
-          if (originalImg.complete && originalImg.naturalWidth > 0) {
+
+          if (
+            originalImg &&
+            originalImg.complete &&
+            originalImg.naturalWidth > 0 &&
+            !originalImg.src.startsWith("data:")
+          ) {
             try {
               clonedImg.src = getBase64FromImage(originalImg);
             } catch (error) {
-              console.error("Canvas tainted! Did you add crossorigin='anonymous' to the <img> tag?", error);
+              console.error(
+                "Image tainted! Did you add crossorigin='anonymous'?",
+                error,
+              );
             }
           }
         });
@@ -335,7 +401,8 @@
                 </svg>
             `;
 
-        const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
+        const url =
+          "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
         const img = new Image();
 
         img.onload = () => {
