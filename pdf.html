@@ -91,43 +91,36 @@
       const url =
         "https://pedro-ping-portfolio.vercel.app/assets/others/PEDRO_HENRIQUE_CHAVES_DIAS.pdf";
 
-      // Global variables to hold the document and zoom state
       let pdfDoc = null;
       let currentScale = 1.0;
-      let fitScale = 1.0; // We'll save the "fit to screen" scale here
-      let isRendering = false; // Prevents clicking zoom rapidly and breaking the render
+      let fitScale = 1.0;
+      let isRendering = false;
 
-      // 1. Initialize and Load the PDF once
       async function initPDF() {
         try {
           const loadingTask = pdfjsLib.getDocument(url);
           pdfDoc = await loadingTask.promise;
 
-          // Calculate the initial scale to fit the screen
           await calculateFitScale();
           currentScale = fitScale;
 
-          // Render the document
           renderDocument();
         } catch (error) {
           console.error("Error loading PDF:", error);
         }
       }
 
-      // 2. Calculate what scale is required to fit the screen
       async function calculateFitScale() {
         const viewer = document.getElementById("pdf-viewer");
         const containerWidth = viewer.clientWidth - 40;
         const maxDesiredWidth = Math.min(containerWidth, 1000);
 
-        // We just check page 1 to establish the baseline scale
         const page = await pdfDoc.getPage(1);
         const unscaledViewport = page.getViewport({ scale: 1.0 });
 
         fitScale = maxDesiredWidth / unscaledViewport.width;
       }
 
-      // 3. Render all pages based on the currentScale
       async function renderDocument() {
         if (isRendering) return;
         isRendering = true;
@@ -178,15 +171,14 @@
         isRendering = false;
       }
 
-      // 4. Button Event Listeners
       document.getElementById("zoom-in").addEventListener("click", () => {
-        if (currentScale >= 3.0) return; // Cap maximum zoom
+        if (currentScale >= 3.0) return;
         currentScale += 0.25;
         renderDocument();
       });
 
       document.getElementById("zoom-out").addEventListener("click", () => {
-        if (currentScale <= 0.5) return; // Cap minimum zoom
+        if (currentScale <= 0.5) return;
         currentScale -= 0.25;
         renderDocument();
       });
@@ -196,7 +188,6 @@
         renderDocument();
       });
 
-      // Start the app
       initPDF();
     </script>
   </body>
