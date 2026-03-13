@@ -137,7 +137,7 @@
       <div id="crop-overlay">
         <div id="crop-box"></div>
       </div>
-
+      <img src="https://picsum.photos/200/300" crossorigin="anonymous" alt="" />
       <div class="receipt-header">
         <h2>Acme Corp</h2>
         <p>Order #99281-B</p>
@@ -255,6 +255,18 @@
         }
       });
 
+      // Helper: Extract Base64 directly from an existing DOM image using a temporary canvas
+      function getBase64FromImage(imgEl) {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = imgEl.naturalWidth || imgEl.width;
+        tempCanvas.height = imgEl.naturalHeight || imgEl.height;
+        
+        const tempCtx = tempCanvas.getContext("2d");
+        tempCtx.drawImage(imgEl, 0, 0);
+        
+        return tempCanvas.toDataURL("image/png"); 
+      }
+
       function takeScreenshot(elementId, crop) {
         activateCropBtn.textContent = "⏳ Processing...";
 
@@ -269,6 +281,21 @@
         canvas.style.height = crop.h + "px";
 
         const clone = element.cloneNode(true);
+
+        const originalImages = element.querySelectorAll("img");
+        const clonedImages = clone.querySelectorAll("img");
+        
+        clonedImages.forEach((clonedImg, index) => {
+          const originalImg = originalImages[index];
+          
+          if (originalImg.complete && originalImg.naturalWidth > 0) {
+            try {
+              clonedImg.src = getBase64FromImage(originalImg);
+            } catch (error) {
+              console.error("Canvas tainted! Did you add crossorigin='anonymous' to the <img> tag?", error);
+            }
+          }
+        });
 
         const originalInputs = element.querySelectorAll("input, textarea");
         const clonedInputs = clone.querySelectorAll("input, textarea");
@@ -308,8 +335,7 @@
                 </svg>
             `;
 
-        const url =
-          "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
+        const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
         const img = new Image();
 
         img.onload = () => {
