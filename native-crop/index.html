@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Native Crop & Screenshot System</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div id="capture-target">
+      <div id="crop-overlay">
+        <div id="crop-box"></div>
+      </div>
+      <img
+        src="https://picsum.photos/200/300"
+        crossorigin="anonymous"
+        alt=""
+        style="border-radius: 8px; margin-bottom: 1rem"
+      />
+
+      <canvas
+        id="canvas-01"
+        style="
+          display: block !important;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+        "
+      ></canvas>
+
+      <div class="receipt-header">
+        <h2>Acme Corp</h2>
+        <p>Order #99281-B</p>
+      </div>
+      <div class="item-row">
+        <span>Flux Capacitor</span><span>$499.99</span>
+      </div>
+      <div class="item-row">
+        <span>Plutonium (1 vial)</span><span>$1,200.00</span>
+      </div>
+      <div class="input-group">
+        <label style="font-size: 0.875rem; font-weight: bold"
+          >Customer Notes:</label
+        >
+        <input
+          type="text"
+          placeholder="Leave at the front door..."
+          id="customer-note"
+        />
+      </div>
+    </div>
+
+    <div class="controls">
+      <div
+        style="
+          background: white;
+          padding: 1.5rem;
+          border-radius: 12px;
+          box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+          width: fit-content;
+        "
+      >
+        <h3 style="margin-top: 0">Snipping Tool</h3>
+        <button id="activateCropBtn">Select Area to Crop</button>
+      </div>
+
+      <div id="result-container">
+        <canvas id="canvas-output"></canvas>
+        <button
+          id="downloadBtn"
+          style="display: none; background-color: #10b981"
+        >
+          Download PNG
+        </button>
+      </div>
+    </div>
+
+    <script src="index.js"></script>
+  </body>
+</html>
