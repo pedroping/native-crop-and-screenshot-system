@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+
 EMSCRIPTEN_KEEPALIVE
 uint8_t *perform_pixel_crop(uint8_t *src_pixels, int src_w, int src_h, int crop_x, int crop_y, int crop_w, int crop_h)
 {
@@ -178,7 +179,7 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
 
     canvas.style.display = "block";
     downloadBtn.style.display = "flex";
-    activateCropBtn.textContent = "✂️ Select Area to Crop";
+    activateCropBtn.textContent = "Select Area to Crop";
     activateCropBtn.disabled = false;
 
     _free(srcPtr);
