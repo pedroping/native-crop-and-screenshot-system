@@ -291,3 +291,5 @@ int main()
   setup_ui();
   return 0;
 }
+
+// emcc main.c -o dist/index.js -s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] -s WASM=1 -s NO_EXIT_RUNTIME=1 -O3
