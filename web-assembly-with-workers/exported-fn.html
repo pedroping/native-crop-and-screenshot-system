@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Streaming</title>
+  </head>
+
+  <body>
+    <p>Hello, WebAssembly!</p>
+
+    <script>
+      const worker = new Worker("worker.js");
+
+      worker.addEventListener("message", (event) => {
+        if (event.data.action == "progress") {
+          console.log("Received result from worker:", event.data.result);
+          document.querySelector("#ret").innerHTML =
+            `Loading... (${event.data.result}%)`;
+        }
+
+        if (event.data.action == "finish") {
+          console.log("Received result from worker:", event.data.result);
+          navigator.clipboard.writeText(event.data.result);
+          document.querySelector("#ret").innerHTML =
+            `${event.data.result}<br/>`;
+          document.querySelector("button").disabled = false;
+        }
+      });
+
+      worker.addEventListener("error", (error) => {
+        console.error("Worker error:", error.message);
+      });
+
+      function get_string() {
+        document.querySelector("button").disabled = true;
+        document.querySelector("#ret").innerHTML = "Loading...";
+        worker.postMessage({
+          command: "INITIALIZE",
+        });
+      }
+    </script>
+
+    <input type="number" id="a" />
+    <button onclick="get_string()">Copy string</button>
+    <p id="ret"></p>
+  </body>
+</html>
