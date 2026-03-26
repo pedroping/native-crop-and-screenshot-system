@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-
 EMSCRIPTEN_KEEPALIVE
 uint8_t *perform_pixel_crop(uint8_t *src_pixels, int src_w, int src_h, int crop_x, int crop_y, int crop_w, int crop_h)
 {
@@ -74,9 +73,15 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
     return tempCanvas.toDataURL("image/png");
   }
 
-  const fullWidth = element.offsetWidth;
-  const fullHeight = element.offsetHeight;
+  const fullWidth = Math.max(element.scrollWidth, element.offsetWidth);
+  const fullHeight = Math.max(element.scrollHeight, element.offsetHeight);
+  
   const clone = element.cloneNode(true);
+
+  clone.style.width = fullWidth + "px";
+  clone.style.height = fullHeight + "px";
+  clone.style.overflow = "visible";
+  clone.style.maxHeight = "none";
 
   const originalCanvases = element.querySelectorAll("canvas");
   const clonedCanvases = clone.querySelectorAll("canvas");
@@ -166,7 +171,10 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
     const srcPtr = _malloc(numBytes);
     HEAPU8.set(srcPixels, srcPtr);
 
-    const destPtr = _perform_pixel_crop(srcPtr, fullWidth, fullHeight, crop_x, crop_y, crop_w, crop_h);
+    const final_crop_y = crop_y + (element.scrollTop || 0);
+    const final_crop_x = crop_x + (element.scrollLeft || 0);
+
+    const destPtr = _perform_pixel_crop(srcPtr, fullWidth, fullHeight, final_crop_x, final_crop_y, crop_w, crop_h);
 
     const destBytes = new Uint8ClampedArray(HEAPU8.buffer, destPtr, crop_w * crop_h * 4);
     const newImgData = new ImageData(destBytes, crop_w, crop_h);

@@ -37,12 +37,14 @@
         border: 1px solid #e2e8f0;
         position: relative;
         height: fit-content;
+        max-height: 500px;
+        overflow: auto;
       }
 
       #crop-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
+        position: fixed;
+        top: calc(2rem + 8px);
+        left: calc(2rem + 8px);
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.4);
@@ -50,6 +52,8 @@
         cursor: crosshair;
         display: none;
         z-index: 10;
+        width: 467px;
+        height: 567px;
       }
 
       #crop-box {
