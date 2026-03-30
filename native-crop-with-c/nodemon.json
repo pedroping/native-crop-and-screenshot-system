@@ -1,0 +1,5 @@
+{
+  "watch": ["main.c"],
+  "ext": ".ts,.js,.html",
+  "exec": "npm run build"
+}

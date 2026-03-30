@@ -73,6 +73,33 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
     return tempCanvas.toDataURL("image/png");
   }
 
+  function getScrollableElements(parent) 
+  {
+    const allElements = parent.querySelectorAll('*');
+    
+    const scrollableElements = Array.from(allElements).filter(e => {
+      const style = window.getComputedStyle(e);
+      const hasScrollbars = e.scrollHeight > e.offsetHeight || e.scrollWidth > e.offsetWidth;
+      const overflowStyle = [style.overflow, style.overflowY, style.overflowX].some(
+        overflow => overflow === 'auto' || overflow === 'scroll'
+      );
+
+      if (e === document.body || e === document.documentElement) {
+          return overflowStyle;
+      }
+
+      return hasScrollbars && overflowStyle;
+    });
+
+    return scrollableElements;
+  }
+
+  const originalScrollEls = getScrollableElements(element);
+  originalScrollEls.forEach((el) => {
+    el.setAttribute('hasScroll', `${el.scrollTop}`);
+    el.setAttribute('elHeight', `${el.offsetHeight}`)
+  });
+  
   const fullWidth = Math.max(element.scrollWidth, element.offsetWidth);
   const fullHeight = Math.max(element.scrollHeight, element.offsetHeight);
   
@@ -141,6 +168,38 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
     } 
     catch (e) {}
   });
+
+  function onScroll(element) 
+  {
+    const scrollTop = element.getAttribute('hasScroll');
+    const elHeight = element.getAttribute('elHeight');
+
+    if(!scrollTop || !elHeight) return;
+
+    const parent = element.parentElement;
+
+    console.log(parent, element);
+
+    const newWrapper = document.createElement("div");
+    const nextSibling = element.nextSibling;
+
+    newWrapper.style.overflow = "auto";
+    newWrapper.style.height = elHeight + "px";
+    newWrapper.style.position = "relative";
+
+    element.style.height = "auto";
+    element.style.width = "100%";
+    element.style.top = `-${scrollTop}px`;
+    element.style.position = "absolute";
+
+    parent.removeChild(element);
+    newWrapper.appendChild(element);
+
+    parent.insertBefore(newWrapper, nextSibling);
+  }
+
+  const clonedScrollElements = clone.querySelectorAll('[hasscroll]');
+  clonedScrollElements.forEach(e => onScroll(e));
 
   const serializer = new XMLSerializer();
   clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
@@ -300,4 +359,6 @@ int main()
   return 0;
 }
 
+// C:\Users\Pedro\Desktop\Projetos\Meus loucos\outros\emsdk
+// emcmdprompt.bat
 // emcc main.c -o dist/index.js -s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] -s WASM=1 -s NO_EXIT_RUNTIME=1 -O3

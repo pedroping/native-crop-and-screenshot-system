@@ -134,6 +134,11 @@
         max-width: 100%;
         display: none;
       }
+
+      .scroll-area {
+        overflow: auto;
+        height: 100px;
+      }
     </style>
   </head>
   <body>
@@ -157,6 +162,14 @@
         "
       ></canvas>
 
+      <div class="scroll-area">
+        <p>scroll-area 1</p>
+        <p>scroll-area 2</p>
+        <p>scroll-area 3</p>
+        <p>scroll-area 4</p>
+        <p>scroll-area 5</p>
+      </div>
+
       <div class="receipt-header">
         <h2>Acme Corp</h2>
         <p>Order #99281-B</p>
@@ -177,6 +190,7 @@
           id="customer-note"
         />
       </div>
+      <button onclick="onScroll()">Scroll</button>
     </div>
 
     <div class="controls">
@@ -204,5 +218,30 @@
       </div>
     </div>
     <script src="dist/index.js"></script>
+    <script>
+      const el = document.querySelector(".scroll-area");
+
+      function onScroll() {
+        console.log({ el });
+        const parent = el.parentElement;
+        const scrollTop = el.scrollTop;
+        const newWrapper = document.createElement("div");
+        const nextSibling = el.nextSibling;
+
+        newWrapper.style.overflow = "auto";
+        newWrapper.style.height = el.offsetHeight + "px";
+        newWrapper.style.position = "relative";
+
+        el.style.height = "auto";
+        el.style.width = "100%";
+        el.style.top = `-${scrollTop}px`;
+        el.style.position = "absolute";
+
+        parent.removeChild(el);
+        newWrapper.appendChild(el);
+
+        parent.insertBefore(newWrapper, nextSibling);
+      }
+    </script>
   </body>
 </html>

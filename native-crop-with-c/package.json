@@ -1,0 +1,18 @@
+{
+  "name": "native-crop-with-c",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "emcc-start": "cd \"C:\\Users\\Pedro\\Desktop\\Projetos\\Meus loucos\\outros\\emsdk\" && call emcmdprompt.bat",
+    "emcc-V": "emcc -v",
+    "build": "emcc main.c -o dist/index.js -s EXPORTED_FUNCTIONS=['_malloc','_free','_main'] -s WASM=1 -s NO_EXIT_RUNTIME=1 -O3",
+    "start": "npx nodemon"
+  },
+  "dependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
