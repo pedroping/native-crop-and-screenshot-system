@@ -3,7 +3,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const url =
-  "https://pedro-ping-portfolio.vercel.app/assets/others/PEDRO_HENRIQUE_CHAVES_DIAS.pdf";
+  "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf";
 
 let pdfDoc = null;
 let currentScale = 1.0;
