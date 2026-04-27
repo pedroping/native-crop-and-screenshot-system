@@ -1,17 +1,58 @@
-const pdfjsLib = window["pdfjs-dist/build/pdf"];
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
-const url =
-  "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf";
-
+let pdfjsLib;
 let pdfDoc = null;
 let currentScale = 1.0;
 let fitScale = 1.0;
 let isRendering = false;
 
+const url =
+  "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf";
+
+function loadStyles() {
+  return new Promise((resolve, reject) => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css";
+
+    link.onload = () => {
+      resolve();
+    };
+
+    link.onerror = () => {
+      reject();
+    };
+
+    document.head.append(link);
+  });
+}
+
+function loadScripts() {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+
+    script.onload = () => {
+      pdfjsLib = window["pdfjs-dist/build/pdf"];
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      resolve();
+    };
+
+    script.onerror = () => {
+      reject();
+    };
+
+    document.head.append(script);
+  });
+}
+
 async function initPDF() {
   try {
+    await loadStyles();
+    await loadScripts();
+
     const loadingTask = pdfjsLib.getDocument(url);
     pdfDoc = await loadingTask.promise;
 
@@ -77,6 +118,22 @@ async function renderDocument() {
         textDivs: [],
       }).promise;
     }
+
+    const pdfViewer = document.getElementById("pdf-viewer");
+    const pageContainers = Array.from(pdfViewer.childNodes);
+
+    if (!pdfViewer || !pageContainers[0]) return (isRendering = false);
+
+    const viewerWidth = pdfViewer.offsetWidth;
+    const containerWidth = pageContainers[0]?.offsetWidth;
+
+    const isSmallDoc = containerWidth < viewerWidth;
+
+    pageContainers.forEach((container) => {
+      container.style.left = isSmallDoc
+        ? ""
+        : `${(containerWidth - viewerWidth) / 2}px`;
+    });
   } catch (error) {
     console.error("Error rendering pages:", error);
   }
