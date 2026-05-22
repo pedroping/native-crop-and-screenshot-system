@@ -4,8 +4,7 @@ let currentScale = 1.0;
 let fitScale = 1.0;
 let isRendering = false;
 
-const url =
-  "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf";
+const url = "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf";
 
 function loadStyles() {
   return new Promise((resolve, reject) => {
