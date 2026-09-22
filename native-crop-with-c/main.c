@@ -59,7 +59,7 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
   const downloadBtn = document.getElementById("downloadBtn");
   const canvas = document.getElementById("canvas-output");
   const ctx = canvas.getContext("2d");
-  const element = document.getElementById("capture-target");
+  const element = document.body;
 
   activateCropBtn.textContent = "Processing...";
 
@@ -100,15 +100,18 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
     el.setAttribute('elHeight', `${el.offsetHeight}`)
   });
   
-  const fullWidth = Math.max(element.scrollWidth, element.offsetWidth);
-  const fullHeight = Math.max(element.scrollHeight, element.offsetHeight);
-  
+  const docEl = document.documentElement;
+
+  const fullWidth = Math.max(element.scrollWidth, element.offsetWidth, docEl.scrollWidth, docEl.clientWidth);
+  const fullHeight = Math.max(element.scrollHeight, element.offsetHeight, docEl.scrollHeight, docEl.clientHeight);
+
   const clone = element.cloneNode(true);
 
   clone.style.width = fullWidth + "px";
   clone.style.height = fullHeight + "px";
   clone.style.overflow = "visible";
   clone.style.maxHeight = "none";
+  clone.style.margin = "0";
 
   const originalCanvases = element.querySelectorAll("canvas");
   const clonedCanvases = clone.querySelectorAll("canvas");
@@ -216,41 +219,65 @@ EM_JS(void, execute_screenshot, (int crop_x, int crop_y, int crop_w, int crop_h)
   const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgData);
   const img = new Image();
 
-  img.onload = function() {
-    const offCanvas = document.createElement("canvas");
-    offCanvas.width = fullWidth;
-    offCanvas.height = fullHeight;
-    const offCtx = offCanvas.getContext("2d", { willReadFrequently: true });
-    offCtx.drawImage(img, 0, 0);
-
-    const imgData = offCtx.getImageData(0, 0, fullWidth, fullHeight);
-    const srcPixels = imgData.data; 
-    const numBytes = srcPixels.length;
-    
-    const srcPtr = _malloc(numBytes);
-    HEAPU8.set(srcPixels, srcPtr);
-
-    const final_crop_y = crop_y + (element.scrollTop || 0);
-    const final_crop_x = crop_x + (element.scrollLeft || 0);
-
-    const destPtr = _perform_pixel_crop(srcPtr, fullWidth, fullHeight, final_crop_x, final_crop_y, crop_w, crop_h);
-
-    const destBytes = new Uint8ClampedArray(HEAPU8.buffer, destPtr, crop_w * crop_h * 4);
-    const newImgData = new ImageData(destBytes, crop_w, crop_h);
-    
-    canvas.width = crop_w;
-    canvas.height = crop_h;
-    canvas.style.width = crop_w + "px";
-    canvas.style.height = crop_h + "px";
-    ctx.putImageData(newImgData, 0, 0);
-
-    canvas.style.display = "block";
-    downloadBtn.style.display = "flex";
+  function resetCropButton()
+  {
     activateCropBtn.textContent = "Select Area to Crop";
     activateCropBtn.disabled = false;
+  }
 
-    _free(srcPtr);
-    _free_buffer(destPtr);
+  img.onerror = function(error) {
+    console.error("[WASM] Snapshot image failed to load:", error);
+    resetCropButton();
+  };
+
+  img.onload = function() {
+    let srcPtr = 0;
+    let destPtr = 0;
+
+    try
+    {
+      const offCanvas = document.createElement("canvas");
+      offCanvas.width = fullWidth;
+      offCanvas.height = fullHeight;
+      const offCtx = offCanvas.getContext("2d", { willReadFrequently: true });
+      offCtx.drawImage(img, 0, 0);
+
+      const imgData = offCtx.getImageData(0, 0, fullWidth, fullHeight);
+      const srcPixels = imgData.data;
+      const numBytes = srcPixels.length;
+
+      srcPtr = _malloc(numBytes);
+      if (!srcPtr) throw new Error("malloc failed for the " + fullWidth + "x" + fullHeight + " page buffer");
+      HEAPU8.set(srcPixels, srcPtr);
+
+      const final_crop_x = crop_x;
+      const final_crop_y = crop_y;
+
+      destPtr = _perform_pixel_crop(srcPtr, fullWidth, fullHeight, final_crop_x, final_crop_y, crop_w, crop_h);
+      if (!destPtr) throw new Error("perform_pixel_crop returned NULL");
+
+      const destBytes = new Uint8ClampedArray(HEAPU8.buffer, destPtr, crop_w * crop_h * 4);
+      const newImgData = new ImageData(destBytes, crop_w, crop_h);
+
+      canvas.width = crop_w;
+      canvas.height = crop_h;
+      canvas.style.width = crop_w + "px";
+      canvas.style.height = crop_h + "px";
+      ctx.putImageData(newImgData, 0, 0);
+
+      canvas.style.display = "block";
+      downloadBtn.style.display = "flex";
+    }
+    catch (error)
+    {
+      console.error("[WASM] Crop pipeline failed:", error);
+    }
+    finally
+    {
+      if (srcPtr) _free(srcPtr);
+      if (destPtr) _free_buffer(destPtr);
+      resetCropButton();
+    }
   };
   img.src = url;
 });
@@ -298,10 +325,34 @@ EM_JS(void, setup_ui, (void), {
   };
   imgSetup.src = "https://picsum.photos/200/300";
 
+  function stretchOverlayOverBody()
+  {
+    const body = document.body;
+    const docEl = document.documentElement;
+
+    if (overlay.parentElement !== body) body.appendChild(overlay);
+
+    const bodyRect = body.getBoundingClientRect();
+    const scrollLeft = window.scrollX || window.pageXOffset || 0;
+    const scrollTop = window.scrollY || window.pageYOffset || 0;
+
+    const fullWidth = Math.max(body.scrollWidth, body.offsetWidth, docEl.scrollWidth, docEl.clientWidth);
+    const fullHeight = Math.max(body.scrollHeight, body.offsetHeight, docEl.scrollHeight, docEl.clientHeight);
+
+    overlay.style.position = "absolute";
+    overlay.style.left = (bodyRect.left + scrollLeft) + "px";
+    overlay.style.top = (bodyRect.top + scrollTop) + "px";
+    overlay.style.right = "auto";
+    overlay.style.bottom = "auto";
+    overlay.style.width = fullWidth + "px";
+    overlay.style.height = fullHeight + "px";
+  }
+
   activateCropBtn.addEventListener("click", function() {
+    stretchOverlayOverBody();
     overlay.style.display = "block";
     cropBox.style.display = "none";
-    activateCropBtn.textContent = "Draw a box on the left...";
+    activateCropBtn.textContent = "Draw a box anywhere on the page...";
     activateCropBtn.disabled = true; 
   });
 
@@ -359,6 +410,6 @@ int main()
   return 0;
 }
 
-// C:\Users\Pedro\Desktop\Projetos\Meus loucos\outros\emsdk
+// cd C:\Users\Pedro\Desktop\Projetos\outros\emsdk
 // emcmdprompt.bat
-// emcc main.c -o dist/index.js -s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] -s WASM=1 -s NO_EXIT_RUNTIME=1 -O3
+// emcc main.c -o dist/index.js -s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] -s WASM=1 -s NO_EXIT_RUNTIME=1 -s ALLOW_MEMORY_GROWTH=1 -O3
